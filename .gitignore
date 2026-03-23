@@ -2,7 +2,8 @@
 *
 
 # But keep these
-!settings.json
-!scripts/
-!skills/
 !.gitignore
+!CLAUDE.md
+!scripts/
+!settings.json
+!skills/
