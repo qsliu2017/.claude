@@ -1,0 +1,8 @@
+# Ignore everything in ~/.claude/
+*
+
+# But keep these
+!settings.json
+!scripts/
+!skills/
+!.gitignore

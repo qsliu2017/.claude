@@ -10,8 +10,12 @@
     "SessionStart": [
       {
         "matcher": "startup|resume",
-        "type": "command",
-        "command": "~/.claude/scripts/ensure-ai-gateway.sh"
+        "hooks": [
+          {
+	    "type": "command",
+	    "command": "~/.claude/scripts/ensure-ai-gateway.sh"
+          }
+        ]
       }
     ],
     "Notification": [
