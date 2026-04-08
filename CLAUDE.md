@@ -7,6 +7,11 @@
 
 - Always use `uv`. Prefer self-contained single file script.
 
+## JavaScript/TypeScript
+
+- Always use `bun`. Prefer bun script.
+- Prefer TypeScript.
+
 ## Make
 
 - Use `-j$(sysctl -n hw.ncpu)`.
