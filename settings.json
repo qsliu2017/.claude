@@ -6,14 +6,16 @@
     "DISABLE_TELEMETRY": "1",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   },
+  "model": "claude-fable-5",
+  "effortLevel": "ultracode",
   "hooks": {
     "SessionStart": [
       {
         "matcher": "startup|resume",
         "hooks": [
           {
-	    "type": "command",
-	    "command": "~/.claude/scripts/ensure-ai-gateway.sh"
+            "type": "command",
+            "command": "~/.claude/scripts/ensure-ai-gateway.sh"
           }
         ]
       }
@@ -47,10 +49,10 @@
   },
   "enabledPlugins": {
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "clangd-lsp@claude-plugins-official": true,
-    "example-skills@anthropic-agent-skills": true
+    "example-skills@anthropic-agent-skills": true,
+    "frontend-design@claude-plugins-official": true
   },
-  "effortLevel": "high",
+  "syntaxHighlightingDisabled": false,
   "skipDangerousModePermissionPrompt": true,
-  "model": "opus[1m]"
+  "verbose": true
 }
