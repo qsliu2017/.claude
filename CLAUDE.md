@@ -5,6 +5,12 @@
 - Before starting any long-running workflow or setting a goal, use CronCreate to schedule a recurring task every 1h with the prompt: "If the previous work was interrupted by a usage limit, resume it from where it left off. If work is complete or proceeding normally, do nothing." Delete the cron job (CronDelete) when the workflow completes.
 - Prefer code than comments. Only comment if code is very non-obvious. Prefer header/inline comments and tests over separate docs. Shoud not write standalone explanation docs.
 
+## Comment Conventions
+
+Try to keep comments short. In general, comments should be one short line. Only in exceptional situations should comments be more than one short line. Code should be mostly self-descriptive and too many large comments make code harder to read and understand.
+
+Avoid adding comments specific to how a change was made to the code that relates to a specific issue. For example, a comment like "add +1 to fix an off-by-one error" is not relevant to understanding the code. Such comments related to specific issues that were addressed belong in a PR description or commit message, not in the code itself.
+
 ## Python
 
 - Always use `uv`. Prefer self-contained single file script.
