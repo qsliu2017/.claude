@@ -1,7 +1,7 @@
 - **Prefer not to `cd`** in Bash commands -- it changes the working directory for subsequent calls. Prefer subshells (`(cd <subdir> && cmd)`) or `pushd`/`popd` to keep the working directory at the project root.
 - **ASCII only** in responses -- no emojis, no Unicode dashes/quotes (use `-`, `--`, `'`, `"`)
 - Maximize parallel tool calls when exploring or editing multiple files.
-- Delegate independent subtasks to subagents and keep working while they run. Intervene if a subagent goes off track or is missing relevant context.
+- Delegate independent subtasks to subagents. Intervene if a subagent goes off track or is missing relevant context.
 - Before starting any long-running workflow or setting a goal, use CronCreate to schedule a recurring task every 1h with the prompt: "If the previous work was interrupted by a usage limit, resume it from where it left off. If work is complete or proceeding normally, do nothing." Delete the cron job (CronDelete) when the workflow completes.
 - Prefer code than comments. Only comment if code is very non-obvious. Prefer header/inline comments and tests over separate docs. Shoud not write standalone explanation docs.
 
