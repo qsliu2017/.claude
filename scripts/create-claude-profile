@@ -1,0 +1,172 @@
+#!/usr/bin/env zsh
+#
+# new-claude-profile.zsh
+#
+# Create a second Claude Code config directory that SHARES session history,
+# memory, skills, settings, etc. with your default ~/.claude profile, but keeps
+# its OWN login credentials and account identity. Use it with:
+#
+#     CLAUDE_CONFIG_DIR=/abs/path/to/work-account claude
+#
+# Allowlist style: only the entries in INCLUDE below are symlinked into the new
+# directory. The account-specific files listed under "NOT linked" are never
+# touched, so the new profile logs in once and writes its own credentials,
+# .claude.json (OAuth/trust/personal MCP servers), and usage there.
+#
+# The INCLUDE set mirrors the official ~/.claude layout:
+#   https://code.claude.com/docs/en/claude-directory
+#
+# Usage:
+#     ./new-claude-profile.zsh /abs/path/to/work-account
+#     ./new-claude-profile.zsh -n ~/.claude-work      # dry run (preview only)
+#
+# Caveats:
+#   * macOS keeps credentials in the Keychain, not .credentials.json, so the
+#     file split alone may not isolate the login there — see the closing note.
+#   * The path is forced absolute to dodge a Linux bug where a "~" in
+#     CLAUDE_CONFIG_DIR creates a literal ./~/ credentials directory.
+
+set -euo pipefail
+
+SRC="${CLAUDE_SRC_DIR:-$HOME/.claude}"
+
+# --- what to SHARE (symlink) ------------------------------------------------
+# Entries that don't exist in the source are skipped. Trim to taste.
+typeset -a INCLUDE
+INCLUDE=(
+  # Memory & instructions
+  CLAUDE.md             # global memory / instructions
+  rules                 # user-level rules (path-gated instructions)
+
+  # Session history & auto-memory
+  projects              # transcripts + per-project auto memory (MEMORY.md)
+  history.jsonl         # prompt history for up-arrow recall
+  file-history          # pre-edit snapshots for checkpoint / rewind
+  plans                 # saved plan-mode files
+  tasks                 # per-session task lists
+  todos                 # legacy task lists (if present)
+  session-env           # per-session environment metadata
+
+  # Customizations
+  skills                # personal skills
+  commands              # personal slash commands
+  agents                # personal subagents
+  workflows             # personal dynamic workflows
+  agent-memory          # user-scoped subagent memory
+  output-styles         # custom output styles
+  plugins               # installed plugins & marketplaces
+
+  # Settings & preferences
+  settings.json         # user settings (drop this for per-account settings)
+  settings.local.json   # local settings override (if present)
+  keybindings.json      # custom key bindings
+  themes                # custom color themes
+
+  # Caches (optional — safe to remove if you'd rather not share them)
+  statsig               # feature-flag / analytics cache
+  shell-snapshots       # captured shell environments
+  paste-cache           # large paste contents
+  image-cache           # attached image contents
+  logs                  # legacy logs (if present)
+)
+
+# NOT linked — kept separate per account (this is the whole point):
+#   .credentials.json                login tokens (Linux/Windows; Keychain on macOS)
+#   .claude.json / .backup / .lock   OAuth session, project trust, personal MCP servers
+#   backups/                         backups of .claude.json (account state)
+#   remote-settings.json             org-managed settings cache (re-fetched per launch)
+#   stats-cache.json                 per-account token/cost counts shown by /usage
+
+# --- parse args -------------------------------------------------------------
+DRY_RUN=0
+DEST=""
+for arg in "$@"; do
+  case "$arg" in
+    -n|--dry-run) DRY_RUN=1 ;;
+    -h|--help)
+      print "Usage: ${0:t} [-n|--dry-run] /path/to/new-profile"
+      exit 0 ;;
+    -*)
+      print -u2 "Unknown option: $arg"; exit 2 ;;
+    *)  DEST="$arg" ;;
+  esac
+done
+
+if [[ -z "$DEST" ]]; then
+  print -u2 "Usage: ${0:t} [-n|--dry-run] /path/to/new-profile"
+  exit 2
+fi
+
+# Expand a leading ~ ourselves, then resolve to an absolute path.
+DEST="${DEST/#\~\//$HOME/}"
+DEST="${DEST:A}"
+
+if [[ ! -d "$SRC" ]]; then
+  print -u2 "Source profile not found: $SRC"
+  exit 1
+fi
+if [[ "$DEST" == "$SRC" ]]; then
+  print -u2 "Destination must differ from the source ($SRC)."
+  exit 1
+fi
+
+# --- do the work ------------------------------------------------------------
+run() { (( DRY_RUN )) && print "DRY  $*" || eval "$*"; }
+
+(( DRY_RUN )) || { mkdir -p "$DEST"; chmod 700 "$DEST"; }
+print "Profile: $DEST"
+print "Source : $SRC"
+print "-------"
+
+local name entry target linked=0 skipped=0
+for name in $INCLUDE; do
+  entry="$SRC/$name"
+
+  if [[ ! -e "$entry" ]]; then
+    (( ++skipped ))
+    continue
+  fi
+
+  target="$DEST/$name"
+  if [[ -e "$target" && ! -L "$target" ]]; then
+    print -u2 "keep   $name  (already exists in destination, not a symlink — untouched)"
+    continue
+  fi
+
+  run "ln -sfn ${(q)entry} ${(q)target}"
+  (( ++linked ))
+  (( DRY_RUN )) || print "link   $name"
+done
+
+print "-------"
+if (( DRY_RUN )); then
+  print "Dry run: would link $linked entr$( (( linked == 1 )) && print y || print ies ), $skipped not present in source."
+else
+  print "Linked $linked entr$( (( linked == 1 )) && print y || print ies ); $skipped not present in source."
+fi
+
+cat <<EOF
+
+Use this profile with:
+
+    export CLAUDE_CONFIG_DIR="$DEST"
+    claude          # first run will ask you to log in to the other account
+
+Or add an alias to your ~/.zshrc:
+
+    alias claude-work="CLAUDE_CONFIG_DIR=\"$DEST\" claude"
+
+The new profile gets its own credentials and a fresh .claude.json, so you'll
+re-add personal MCP servers and re-accept project-trust prompts there once.
+Everything in INCLUDE — transcripts and auto-memory (projects/), CLAUDE.md,
+skills/, settings, etc. — is shared with your default profile.
+
+Note: shared single files (history.jsonl, settings.json) are written in place,
+so running both profiles at the same time can race on them. Per-session data
+under projects/ is fine since each session writes its own file.
+
+macOS only: credentials live in the Keychain, not .credentials.json. After
+logging in to the second account, run plain 'claude' once to confirm your
+default account is still authenticated. If one login logs the other out, the
+profiles share the Keychain entry and this file split alone won't isolate them.
+EOF
